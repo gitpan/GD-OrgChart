@@ -1,6 +1,5 @@
 .cvsignore
 CVS
-GD-OrgChart-0.01.tar.gz
 Makefile
 blib
 make.out

@@ -1,6 +1,6 @@
 package GD::OrgChart;
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 
 # Copyright 2002, Gary A. Algier.  All rights reserved.  This module is
 # free software; you can redistribute it or modify it under the same
@@ -17,8 +17,9 @@ our @ISA = qw(Exporter);
 # This allows declaration	use GD::OrgChart ':all';
 # If you do not need this, moving things directly into @EXPORT or @EXPORT_OK
 # will save memory.
-our %EXPORT_TAGS = ( 'all' => [ qw(
-) ] );
+our %EXPORT_TAGS = (
+	all => [ qw( ) ]
+);
 
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 
@@ -44,7 +45,7 @@ sub new
 		boxborder => 1,
 		linespacing => 4,
 		size => 12,
-		font => "/dev/null",
+		font => gdLargeFont,
 		top => 10,
 		bottom => 10,
 		left => 10,
@@ -64,7 +65,7 @@ sub new
 	return $self;
 }
 
-sub image
+sub Image
 {
 	my $self = shift;
 
@@ -173,11 +174,14 @@ sub DrawTree
 		$self->BoundTree($node,%params);
 	}
 
-	if (!defined($self->{image})) {
+	if (!defined($self->Image)) {
 		my @b = @{$node->{TreeBounds}};
 		my $w = _width(@b) + $params{left} + $params{right};
 		my $h = _height(@b) + $params{top} + $params{bottom};
-		$self->{image} = new GD::Image($w,$h);
+		$self->Image(GD::Image->new($w,$h));
+		# use the box bg color as the first color allocated
+		# so it becomes the image bg color
+		$self->{image}->colorAllocate(@{$params{boxbgcolor}});
 	}
 
 	if (!defined($params{x}) || !defined($params{y})) {
@@ -574,17 +578,17 @@ GD::OrgChart - Perl extension for generating personnel organization charts
       ]},
     ]};
 
-  our $chart = new GD::OrgChart({ size => 12, font => FONT });
+  our $chart = GD::OrgChart->new({ size => 12, font => FONT });
   $chart->DrawTree($COMPANY);
 
-  our $fh = new IO::Pipe;
+  our $fh = IO::Pipe->new;
   if (!$fh || !($fh->writer("display -"))) {
     # error
     ...
   }
   binmode $fh;	# just in case
 
-  our $image = $chart->image;
+  our $image = $chart->Image;
   $fh->print($image->png);
   $fh->close();
 

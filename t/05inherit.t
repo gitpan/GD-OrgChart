@@ -12,7 +12,7 @@ use GD;
   {
     my $self = shift;
     my @b = $self->SUPER::DrawBox(@_);
-    my $image = $self->SUPER::image();
+    my $image = $self->SUPER::Image();
     my $color = $image->colorAllocate(0,0,0);
     $image->line(@b,$color);
     $image->line($b[0],$b[3],$b[2],$b[1],$color);
@@ -47,7 +47,7 @@ use GD;
   our $fh = IO::File->new("t/$NAME.tmp", "w");
   binmode $fh;	# just in case
 
-  our $image = $chart->image;
+  our $image = $chart->Image;
   $fh->print($image->png);
   $fh->close();
 

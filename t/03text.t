@@ -31,7 +31,7 @@ use GD::OrgChart;
   our $fh = IO::File->new("t/$NAME.tmp", "w");
   binmode $fh;	# just in case
 
-  our $image = $chart->image;
+  our $image = $chart->Image;
   $fh->print($image->png);
   $fh->close();
 

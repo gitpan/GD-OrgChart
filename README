@@ -1,13 +1,23 @@
-GD/OrgChart version 0.01
+GD/OrgChart version 0.03
 ========================
 
 This module will draw those organization charts so popular in the
 corporate world.  It was developed with the intention of automatically
-generating the charts from the LDAP datastore, rather than manually
+generating the charts from the LDAP data-store, rather than manually
 the other way around.
 
-This is a pure perl module, no compiling necessary.  However, it is
+This is a pure Perl module, no compiling necessary.  However, it is
 dependent upon the GD package.
+
+WARNINGS
+
+The name-space for this module is not yet "approved".  It is our
+intention, based upon the recommendation of one of the "module committee"
+members, to modify this module, with Matt Sanford's help, to make it able
+to also perform the functionality of the Image::OrgChart module.
+
+As such, there may be some changes in the interfaces of this module
+as we do this.
 
 INSTALLATION
 
@@ -31,7 +41,7 @@ may work on a lesser or greater version
    libjpeg 6b
    zlib 1.1.3
 
-COPYRIGHT AND LICENCE
+COPYRIGHT AND LICENSE
 
 Copyright 2002, Gary A. Algier.  All rights reserved.  This module is
 free software; you can redistribute it or modify it under the same
