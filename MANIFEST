@@ -1,0 +1,15 @@
+Changes
+Copyright
+Copyright
+MANIFEST
+MANIFEST.SKIP
+Makefile.PL
+OrgChart.pm
+README
+doggy.ttf
+doggy.txt
+t/01syntax.t
+t/02notext.t
+t/03text.t
+t/notext-home.png
+t/text-home.png

@@ -1,0 +1,7 @@
+Revision history for Perl extension GD::OrgChart.
+
+0.01  Wed Dec 18 21:03:35 2002
+	- original version; created by h2xs 1.21 with options
+		-XA -n GD::OrgChart
+	- imported code separately developed outside the proper
+	  module framework

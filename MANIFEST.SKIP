@@ -1,0 +1,11 @@
+.cvsignore
+CVS
+GD-OrgChart-0.01.tar.gz
+Makefile
+blib
+make.out
+pm_to_blib
+t/.cvsignore
+t/CVS
+t/notext-home.tmp
+t/text-home.tmp
