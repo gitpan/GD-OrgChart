@@ -1,10 +1,11 @@
 use Test;
 BEGIN { plan tests => 1 };
 use GD::OrgChart;
+use GD;
 
   use IO::File;
 
-  our $NAME = "notext-home";
+  our $NAME = "builtin-home";
 
   our $COMPANY;
 
@@ -21,8 +22,9 @@ use GD::OrgChart;
       ]},
     ]};
 
-  our $chart = GD::OrgChart->new({ size => 0 });
+  our $FONT = gdGiantFont;
 
+  our $chart = GD::OrgChart->new({ size => 1, font => $FONT });
   $chart->DrawTree($COMPANY);
 
   our $fh = IO::File->new("t/$NAME.tmp", "w");

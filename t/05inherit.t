@@ -1,10 +1,28 @@
 use Test;
 BEGIN { plan tests => 1 };
 use GD::OrgChart;
+use GD;
+
+# This tests inheritance by creating a new drawing function
+# that will X out the boxes.
+{
+  package Foo;
+  our @ISA = qw(GD::OrgChart);
+  sub DrawBox
+  {
+    my $self = shift;
+    my @b = $self->SUPER::DrawBox(@_);
+    my $image = $self->SUPER::image();
+    my $color = $image->colorAllocate(0,0,0);
+    $image->line(@b,$color);
+    $image->line($b[0],$b[3],$b[2],$b[1],$color);
+    return @b;
+  }
+}
 
   use IO::File;
 
-  our $NAME = "notext-home";
+  our $NAME = "inherit";
 
   our $COMPANY;
 
@@ -21,8 +39,9 @@ use GD::OrgChart;
       ]},
     ]};
 
-  our $chart = GD::OrgChart->new({ size => 0 });
+  our $FONT = gdGiantFont;
 
+  our $chart = Foo->new({ size => 12, font => $FONT });
   $chart->DrawTree($COMPANY);
 
   our $fh = IO::File->new("t/$NAME.tmp", "w");

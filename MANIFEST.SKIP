@@ -9,3 +9,5 @@ t/.cvsignore
 t/CVS
 t/notext-home.tmp
 t/text-home.tmp
+t/builtin-home.tmp
+t/inherit.tmp

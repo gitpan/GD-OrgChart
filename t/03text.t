@@ -23,13 +23,12 @@ use GD::OrgChart;
 
   our $FONT = `pwd`;
   chomp $FONT;
-  #$FONT .= "/gooddogcool.ttf";
   $FONT .= "/doggy.ttf";
 
-  our $chart = new GD::OrgChart({ size => 12, font => $FONT });
+  our $chart = GD::OrgChart->new({ size => 12, font => $FONT });
   $chart->DrawTree($COMPANY);
 
-  our $fh = new IO::File "t/$NAME.tmp", "w";
+  our $fh = IO::File->new("t/$NAME.tmp", "w");
   binmode $fh;	# just in case
 
   our $image = $chart->image;

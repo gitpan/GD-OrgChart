@@ -1,5 +1,6 @@
 package GD::OrgChart;
 
+our $VERSION = '0.02';
 
 # Copyright 2002, Gary A. Algier.  All rights reserved.  This module is
 # free software; you can redistribute it or modify it under the same
@@ -13,53 +14,18 @@ require Exporter;
 
 our @ISA = qw(Exporter);
 
-# Items to export into callers namespace by default. Note: do not export
-# names by default without a very good reason. Use EXPORT_OK instead.
-# Do not simply export all your public functions/methods/constants.
-
 # This allows declaration	use GD::OrgChart ':all';
 # If you do not need this, moving things directly into @EXPORT or @EXPORT_OK
 # will save memory.
 our %EXPORT_TAGS = ( 'all' => [ qw(
-	
 ) ] );
 
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 
 our @EXPORT = qw(
-	
 );
-our $VERSION = '0.01';
 
 use GD;
-
-use constant PARAMS => {
-	boxbgcolor => [255,255,255],
-	boxfgcolor => [0,0,0],
-	boxtextcolor => [255,0,0],
-	boxtop => 4,
-	boxbottom => 4,
-	boxleft => 4,
-	boxright => 4,
-	boxborder => 1,
-	linespacing => 4,
-	size => 12,
-	font => "/dev/null",
-	top => 10,
-	bottom => 10,
-	left => 10,
-	right => 10,
-	horzspacing => 20,
-	vertspacing => 20,
-	linewidth => 1,
-	linecolor => [0,0,255],
-	depth => 0,
-	debug => 0,
-};
-
-our %PARAMS = %{&PARAMS};
-
-END { }       # module clean-up code here (global destructor)
 
 sub new
 {
@@ -67,8 +33,29 @@ sub new
 	my $class = ref($proto) || $proto;
 	my $self = {};
 	$self->{image} = undef;
-	$self->{adorn} = sub {};
-	$self->{params} = { %PARAMS };
+	$self->{params} = {
+		boxbgcolor => [255,255,255],
+		boxfgcolor => [0,0,0],
+		boxtextcolor => [255,0,0],
+		boxtop => 4,
+		boxbottom => 4,
+		boxleft => 4,
+		boxright => 4,
+		boxborder => 1,
+		linespacing => 4,
+		size => 12,
+		font => "/dev/null",
+		top => 10,
+		bottom => 10,
+		left => 10,
+		right => 10,
+		horzspacing => 20,
+		vertspacing => 20,
+		linewidth => 1,
+		linecolor => [0,0,255],
+		depth => 0,
+		debug => 0,
+	};
 	if (@_ > 0 && ref($_[0]) eq "HASH") {
 		my $p = shift;
 		@{$self->{params}}{keys %$p} = values %$p;
@@ -85,16 +72,6 @@ sub image
 		$self->{image} = shift;
 	}
 	return $self->{image};
-}
-
-sub adorn
-{
-	my $self = shift;
-
-	if (@_) {
-		$self->{adorn} = shift;
-	}
-	return $self->{adorn};
 }
 
 
@@ -135,18 +112,18 @@ sub _BoundTree
 	my (@box);
 	my (@tree,$treeleft,$treeright,$treetop,$treebottom);
 
-	@tree = @box = $self->BoundBox($node,\%params);
+	@tree = @box = $self->BoundBox($node,$maxdepth,$curdepth,\%params);
 	$node->{BoxBounds} = [ @box ];
-	$node->{BoxSize} = sprintf("%dx%d",height(@box),width(@box));
-	$treetop = top(@tree);
-	$treeleft = left(@tree);
-	$treebottom = bottom(@tree);
-	$treeright = right(@tree);
+	$node->{BoxSize} = sprintf("%dx%d",_height(@box),_width(@box));
+	$treetop = _top(@tree);
+	$treeleft = _left(@tree);
+	$treebottom = _bottom(@tree);
+	$treeright = _right(@tree);
 
 	# if no subs or we are deep enough, we are done.
 	if (!defined($node->{subs}) || ($maxdepth && $curdepth >= $maxdepth)) {
 		$node->{TreeBounds} = [ @tree ];
-		$node->{TreeSize} = sprintf("%dx%d",height(@tree),width(@tree));
+		$node->{TreeSize} = sprintf("%dx%d",_height(@tree),_width(@tree));
 		return @tree;
 	}
 
@@ -154,21 +131,21 @@ sub _BoundTree
 	my $highest = 0;
 	foreach my $sub (@{$node->{subs}}) {
 		my @sub = $self->_BoundTree($sub,$maxdepth,$curdepth,%params);
-		$totalwidth += width(@sub);
-		$highest = max($highest,height(@sub));
+		$totalwidth += _width(@sub);
+		$highest = _max($highest,_height(@sub));
 	}
 	$totalwidth += $params{horzspacing} * (scalar @{$node->{subs}} - 1);
 	$treebottom += $params{vertspacing} * 2 + $highest;
-	if (width(@box) < $totalwidth) {
-		my $diff = $totalwidth - width(@box);
-		$treeleft -= firsthalf($diff);
-		$treeright += secondhalf($diff);
+	if (_width(@box) < $totalwidth) {
+		my $diff = $totalwidth - _width(@box);
+		$treeleft -= _firsthalf($diff);
+		$treeright += _secondhalf($diff);
 	}
 
 	@tree = ($treeleft,$treebottom,$treeright,$treetop);
 
 	$node->{TreeBounds} = [ @tree ];
-	$node->{TreeSize} = sprintf("%dx%d",height(@tree),width(@tree));
+	$node->{TreeSize} = sprintf("%dx%d",_height(@tree),_width(@tree));
 	return @tree;
 }
 
@@ -198,17 +175,17 @@ sub DrawTree
 
 	if (!defined($self->{image})) {
 		my @b = @{$node->{TreeBounds}};
-		my $w = width(@b) + $params{left} + $params{right};
-		my $h = height(@b) + $params{top} + $params{bottom};
+		my $w = _width(@b) + $params{left} + $params{right};
+		my $h = _height(@b) + $params{top} + $params{bottom};
 		$self->{image} = new GD::Image($w,$h);
 	}
 
 	if (!defined($params{x}) || !defined($params{y})) {
-		my $treewidth = width(@{$node->{TreeBounds}})
+		my $treewidth = _width(@{$node->{TreeBounds}})
 			+ $params{left} + $params{right};
-		my $boxheight = height(@{$node->{BoxBounds}});
-		$x = firsthalf($treewidth);
-		$y = firsthalf($boxheight) + $params{top};
+		my $boxheight = _height(@{$node->{BoxBounds}});
+		$x = _firsthalf($treewidth);
+		$y = _firsthalf($boxheight) + $params{top};
 	}
 
 	return $self->_DrawTree($node,$x,$y,
@@ -236,22 +213,22 @@ sub _DrawTree
 	my ($temp,$junction,$subtop,$linecolor);
 
 	# draw our box
-	@box = $self->DrawBox($node,$x,$y,\%params);
+	@box = $self->DrawBox($node,$x,$y,$maxdepth,$curdepth,\%params);
 	$node->{BoxBounds} = [ @box ];
-	$node->{BoxSize} = sprintf("%dx%d",height(@box),width(@box));
+	$node->{BoxSize} = sprintf("%dx%d",_height(@box),_width(@box));
 
 	@tree = @box;
-	$treetop = top(@tree);
-	$treeleft = left(@tree);
-	$treebottom = bottom(@tree);
-	$treeright = right(@tree);
+	$treetop = _top(@tree);
+	$treeleft = _left(@tree);
+	$treebottom = _bottom(@tree);
+	$treeright = _right(@tree);
 	$node->{TreeBounds} = [ @tree ];
-	$node->{TreeSize} = sprintf("%dx%d",height(@tree),width(@tree));
+	$node->{TreeSize} = sprintf("%dx%d",_height(@tree),_width(@tree));
 
 	# if no subs or we are deep enough, we are done.
 	if (!defined($node->{subs}) || ($maxdepth && $curdepth >= $maxdepth)) {
 		$node->{TreeBounds} = [ @tree ];
-		$node->{TreeSize} = sprintf("%dx%d",height(@tree),width(@tree));
+		$node->{TreeSize} = sprintf("%dx%d",_height(@tree),_width(@tree));
 		return @tree;
 	}
 
@@ -259,7 +236,7 @@ sub _DrawTree
 	$linecolor = $self->{image}->colorAllocate(@{$params{linecolor}});
 
 	# this is the line from the bottom of our box to the horizontal line
-	$temp = $y + secondhalf(height(@box));
+	$temp = $y + _secondhalf(_height(@box));
 	$junction = $temp + $params{vertspacing};
 	$subtop = $junction + $params{vertspacing};
 	$self->{image}->line($x,$temp,$x,$junction,$linecolor);
@@ -268,7 +245,7 @@ sub _DrawTree
 
 	my @widths = map {
 			defined($_->{TreeBounds})
-				? width(@{$_->{TreeBounds}})
+				? _width(@{$_->{TreeBounds}})
 				: ();
 		} @{$node->{subs}};
 	my $subx = $x;
@@ -285,13 +262,13 @@ sub _DrawTree
 
 		# the horizontal line is not centered, the tree below the
 		# line is centered.
-		$subx = $x - firsthalf($totalwidth) + firsthalf($left);
-		$temp = $x + secondhalf($totalwidth) - secondhalf($right);
+		$subx = $x - _firsthalf($totalwidth) + _firsthalf($left);
+		$temp = $x + _secondhalf($totalwidth) - _secondhalf($right);
 
 		$self->{image}->line($subx,$junction,
 			$temp,$junction,$linecolor);
-		$treeleft = min($treeleft,$x - firsthalf($totalwidth));
-		$treeright = max($treeleft,$x + secondhalf($totalwidth));
+		$treeleft = _min($treeleft,$x - _firsthalf($totalwidth));
+		$treeright = _max($treeleft,$x + _secondhalf($totalwidth));
 	}
 
 	# draw lines down to the sub trees and draw the trees
@@ -300,22 +277,22 @@ sub _DrawTree
 		$self->{image}->line($subx,$junction,
 			$subx,$junction+$params{vertspacing},$linecolor);
 		$temp = $junction + $params{vertspacing}
-			+ firsthalf(height(@{$sub->{BoxBounds}}));
+			+ _firsthalf(_height(@{$sub->{BoxBounds}}));
 		my @sub = $self->_DrawTree($sub,$subx,$temp,
 			$maxdepth,$curdepth,%params);
-		$treeleft = min($treeleft,left(@sub));
-		$treeright = max($treeright,right(@sub));
-		$treebottom = max($treebottom,bottom(@sub));
+		$treeleft = _min($treeleft,_left(@sub));
+		$treeright = _max($treeright,_right(@sub));
+		$treebottom = _max($treebottom,_bottom(@sub));
 		if (@widths) {
-			$subx += secondhalf($width);
+			$subx += _secondhalf($width);
 			$subx += $params{horzspacing};
-			$subx += firsthalf($widths[0]);
+			$subx += _firsthalf($widths[0]);
 		}
 	}
 
 	@tree = ($treeleft,$treebottom,$treeright,$treetop);
 	$node->{TreeBounds} = [ @tree ];
-	$node->{TreeSize} = sprintf("%dx%d",height(@tree),width(@tree));
+	$node->{TreeSize} = sprintf("%dx%d",_height(@tree),_width(@tree));
 	return @tree;
 }
 
@@ -325,6 +302,8 @@ sub BoundBox
 	my $self = shift;
 
 	my $node = shift;
+	my $maxdepth = shift;
+	my $curdepth = shift;
 
 	my %params = %{$self->{params}};
 	if (@_ == 1) {
@@ -340,14 +319,13 @@ sub BoundBox
 	my ($width,$height);
 	$width = $height = 0;
 
-	if ($params{size} > 0 && defined($node->{text})) {
+	if ($params{size} != 0 && defined($node->{text})) {
 		my @text = split("\n",$node->{text});
 		for my $text (@text) {
-			my @bounds = rebound(GD::Image->stringFT(0,
-					$params{font},$params{size},
-					0,0,0,$text));
-			$width = max($width,width(@bounds));
-			$height += height(@bounds);
+			my @bounds = _string(undef,0,
+				$params{font},$params{size},0,0,$text);
+			$width = _max($width,_width(@bounds));
+			$height += _height(@bounds);
 		}
 		$height += (@text - 1) * $params{linespacing};
 	}
@@ -358,13 +336,12 @@ sub BoundBox
 		+ 2 * $params{boxborder};
 
 	my ($left,$bottom,$right,$top);
-	$left = -firsthalf($width);
+	$left = -_firsthalf($width);
 	$right = $left + $width;
-	$top = -firsthalf($height);
+	$top = -_firsthalf($height);
 	$bottom = $top + $height;
 
-	my @box = ($left,$bottom,$right,$top);
-	return @box;
+	return ($left,$bottom,$right,$top);
 }
 
 
@@ -373,9 +350,10 @@ sub DrawBox
 	my $self = shift;
 
 	my $node = shift;
-
 	my $x = shift;
 	my $y = shift;
+	my $maxdepth = shift;
+	my $curdepth = shift;
 
 	my %params = %{$self->{params}};
 	if (@_ == 1) {
@@ -391,16 +369,16 @@ sub DrawBox
 	my ($width,$height,@width,@height);
 	$width = $height = 0;
 
-	if ($params{size} > 0 && defined($node->{text})) {
+	if ($params{size} != 0 && defined($node->{text})) {
 		my @text = split("\n",$node->{text});
 		for my $text (@text) {
-			my @bounds = rebound(GD::Image->stringFT(0,
+			my @bounds = _string(undef,0,
 					$params{font},$params{size},
-					0,0,0,$text));
-			push @width,width(@bounds);
-			push @height,height(@bounds);
-			$width = max($width,width(@bounds));
-			$height += height(@bounds);
+					0,0,$text);
+			push @width,_width(@bounds);
+			push @height,_height(@bounds);
+			$width = _max($width,_width(@bounds));
+			$height += _height(@bounds);
 		}
 		$height += (@text - 1) * $params{linespacing};
 	}
@@ -411,9 +389,9 @@ sub DrawBox
 		+ 2 * $params{boxborder};
 
 	my ($left,$bottom,$right,$top);
-	$left = $x - firsthalf($width);
+	$left = $x - _firsthalf($width);
 	$right = $left + $width;
-	$top = $y - firsthalf($height);
+	$top = $y - _firsthalf($height);
 	$bottom = $top + $height;
 
 	my $bgcolor = $self->{image}->colorAllocate(@{$params{boxbgcolor}});
@@ -428,22 +406,62 @@ sub DrawBox
 		$bottom-$params{boxborder},
 		$bgcolor);
 
-	if ($params{size} > 0 && defined($node->{text})) {
+	if ($params{size} != 0 && defined($node->{text})) {
 		my $ytemp = $top + $params{boxborder} + $params{boxtop};
 		my @text = split("\n",$node->{text});
 		for my $text (@text) {
 			my $h = shift @height;
-			$self->{image}->stringFT($textcolor,
+# Note:
+#	The y coordinate supplied to stringFT must be the bottom
+#	of the text, however, the y coordinate supplied to
+#	string is the top of the text.  To deal with this
+#	we pass (y + height).  This gets adjusted back before
+#	string is called (see below in _string).
+			_string($self->{image},$textcolor,
 					$params{font},$params{size},
-					0,$x - firsthalf(shift @width),
+					$x - _firsthalf(shift @width),
 					$ytemp + $h,$text);
 			$ytemp += $h + $params{linespacing};
 		}
 	}
 
-	my @box = ($left,$bottom,$right,$top);
-	$self->{adorn}($self,$node,$x,$y,\@box);
-	return @box;
+	return ($left,$bottom,$right,$top);
+}
+
+
+sub _string
+{
+	my $image = shift;
+	my $color = shift;
+	my $font = shift;
+	my $size = shift;
+	my $x = shift;
+	my $y = shift;
+	my $text = shift;
+
+	my @b;
+
+	if (ref($font)) {
+		# must be builtin font
+		@b = ($x,$y + $font->height,
+			$x + $font->width * length($text),$y);
+		if (defined($image)) {
+			$image->string($font,$x,$y - $font->height
+				,$text,$color);
+		}
+	}
+	else {
+		if (defined($image)) {
+			@b = $image->stringFT($color,$font,
+				$size,0,$x,$y,$text);
+		}
+		else {
+			@b = GD::Image->stringFT($color,$font,
+				$size,0,$x,$y,$text);
+		}
+		@b = _rebound(@b);
+	}
+	return @b;
 }
 
 
@@ -451,8 +469,10 @@ sub DrawBox
 #	(left,bottom,right,bottom,right,top,left,top)
 # This is redundant.  I use the Postscript idea of:
 #	(left,bottom,right,top)
+# aka:
+#	(llx,lly,urx,ury)
 # This function does the conversion
-sub rebound
+sub _rebound
 {
 	if (@_ == 8) {
 		 return @_[0,1,4,5];
@@ -464,41 +484,41 @@ sub rebound
 
 # in many cases we need two different
 # "half" values such that the sum equals the whole.
-sub firsthalf
+sub _firsthalf
 {
 	return int($_[0] / 2);
 }
 
-sub secondhalf
+sub _secondhalf
 {
 	return $_[0] - int($_[0] / 2);
 }
 
-sub top
+sub _top
 {
 	return $_[3];
 }
-sub bottom
+sub _bottom
 {
 	return $_[1];
 }
-sub left
+sub _left
 {
 	return $_[0];
 }
-sub right
+sub _right
 {
 	return $_[2];
 }
-sub width
+sub _width
 {
 	return abs($_[0] - $_[2]);
 }
-sub height
+sub _height
 {
 	return abs($_[1] - $_[3]);
 }
-sub min
+sub _min
 {
 	my $min = shift;
 	my $x;
@@ -509,7 +529,7 @@ sub min
 	}
 	return $min;
 }
-sub max
+sub _max
 {
 	my $max = shift;
 	my $x;
@@ -528,7 +548,7 @@ __END__
 
 =head1 NAME
 
-GD::OrgChart - Perl extension for generating personel organization charts
+GD::OrgChart - Perl extension for generating personnel organization charts
 
 =head1 SYNOPSIS
 

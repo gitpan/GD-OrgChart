@@ -13,3 +13,10 @@ t/02notext.t
 t/03text.t
 t/notext-home.png
 t/text-home.png
+t/04builtin.t
+t/05inherit.t
+t/builtin-home.png
+t/inherit.png
+t/builtin-home.tmp
+t/inherit.tmp
+
